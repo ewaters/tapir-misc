@@ -16,6 +16,14 @@ my $build = Module::Build->new(
 		'POE::Component::Client::AMQP' => 0,
 		'Thrift::Parser' => 0,
 		'POE::Component::Sequence' => 0,
+
+		'Net::IP' => 0,
+		'YAML::XS' => 0,
+
+		# JSON Proxy
+		'IO::Socket::SSL' => 0,
+		'POE::Component::Server::HTTP' => 0,
+		'Data::UUID' => 0,
 	},
 	create_makefile_pl => 'small',
 	meta_merge => {

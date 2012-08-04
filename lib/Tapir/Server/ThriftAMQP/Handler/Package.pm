@@ -9,7 +9,6 @@ sub new {
     my $class = shift;
 
     my %self = validate(@_, {
-        'package' => 1,
         methods => { type => ARRAYREF },
     });
 

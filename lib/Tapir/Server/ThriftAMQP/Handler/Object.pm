@@ -9,7 +9,7 @@ sub new {
     my $class = shift;
 
     my %self = validate(@_, {
-        object => 1,
+		object => 1,
         method_prefix => { default => '' },
         method_suffix => { default => '' },
         precall => { default => [] },

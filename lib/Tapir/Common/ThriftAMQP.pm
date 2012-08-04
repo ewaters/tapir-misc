@@ -5,7 +5,6 @@ use warnings;
 use base qw(Class::Accessor::Grouped);
 
 use Thrift::MemoryBuffer;
-use Thrift::JSONProtocol;
 use Thrift::BinaryProtocol;
 use Tapir::Exceptions;
 use Data::Dumper;

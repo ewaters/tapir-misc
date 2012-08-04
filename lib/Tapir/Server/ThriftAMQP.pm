@@ -86,7 +86,7 @@ __PACKAGE__->mk_group_accessors(simple => qw(
 ));
 
 use Tapir::MethodCall;
-use Tapir::Server::ThriftAMQP::Handler;
+use Tapir::Server::ThriftAMQP::Handler::Factory;
 use POE qw(
     Component::IndependentProcesses
 );
@@ -116,7 +116,7 @@ Call with the following named values:
 
 =item I<Handlers>
 
-Array of hashes, where each hash is passed to L<Tapir::Server::ThriftAMQP::Handler/factory> and added to the handler chain.
+Array of hashes, where each hash is passed to L<Tapir::Server::ThriftAMQP::Handler::Factory> and added to the handler chain.
 
 =item I<Debug> (used for L<Thrift::Parser> debug)
 
@@ -199,8 +199,8 @@ sub create {
     my $self = bless \%self, $class;
 
     foreach my $handler_details (@{ $opts{Handlers} }) {
-        my $handler = Tapir::Server::ThriftAMQP::Handler
-            ->factory(%$handler_details);
+        my $handler = Tapir::Server::ThriftAMQP::Handler::Factory
+            ->new(%$handler_details);
         if (! $handler) {
             croak "Didn't find handler that matched signature: "
                 .join(', ', sort keys %$handler_details);
