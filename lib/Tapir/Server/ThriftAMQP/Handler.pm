@@ -1,16 +1,16 @@
-package MyAPI::Server::ThriftAMQP::Handler;
+package Tapir::Server::ThriftAMQP::Handler;
 
 use strict;
 use warnings;
 
-use MyAPI::Server::ThriftAMQP::Handler::Object;
-use MyAPI::Server::ThriftAMQP::Handler::Inline;
-use MyAPI::Server::ThriftAMQP::Handler::Package;
+use Tapir::Server::ThriftAMQP::Handler::Object;
+use Tapir::Server::ThriftAMQP::Handler::Inline;
+use Tapir::Server::ThriftAMQP::Handler::Package;
 
 sub factory {
     my ($class, %opt) = @_;
 
-    my $subclass = 'MyAPI::Server::ThriftAMQP::Handler::';
+    my $subclass = 'Tapir::Server::ThriftAMQP::Handler::';
     if ($opt{object}) {
         $subclass .= 'Object';
     }

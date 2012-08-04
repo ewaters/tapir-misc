@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use FindBin;
 
-use MyAPI::Server::ThriftAMQP;
+use Tapir::Server::ThriftAMQP;
 
 {
 	package My::Calculator;
@@ -25,7 +25,7 @@ use MyAPI::Server::ThriftAMQP;
 	}
 }
 
-my $server = MyAPI::Server::ThriftAMQP->create(
+my $server = Tapir::Server::ThriftAMQP->create(
 	ThriftIDL => $FindBin::Bin . '/../t/thrift/calculator.thrift',
 	Service   => 'Calculator',
 	Handlers  => [{

@@ -1,8 +1,8 @@
-package MyAPI::Server;
+package Tapir::Server;
 
 =head1 NAME
 
-MyAPI::Server - An API server
+Tapir::Server - An API server
 
 =head1 DESCRIPTION
 

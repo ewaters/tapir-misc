@@ -1,14 +1,14 @@
-package MyAPI::Client::ThriftAMQP;
+package Tapir::Client::ThriftAMQP;
 
 =head1 NAME
 
-MyAPI::Client::ThriftAMQP - Thrift AMQP client
+Tapir::Client::ThriftAMQP - Thrift AMQP client
 
 =head1 SYNOPSIS
 
-  use MyAPI::Client::ThriftAMQP;
+  use Tapir::Client::ThriftAMQP;
 
-  my $client = MyAPI::Client::ThriftAMQP->new(
+  my $client = Tapir::Client::ThriftAMQP->new(
       ThriftIDL => 'myapi.thrift',
   );
 
@@ -45,7 +45,7 @@ A client interface to the Thrift AMQP implementation of an API, this library enc
 
 use strict;
 use warnings;
-use base qw(MyAPI::Common::ThriftAMQP);
+use base qw(Tapir::Common::ThriftAMQP);
 __PACKAGE__->mk_group_accessors(simple => qw(
     amq
     logger
@@ -136,8 +136,8 @@ sub new {
     my $self = bless \%self, $class;
 
     $self{idl} = ref $opts{ThriftIDL} ? $opts{ThriftIDL} : Thrift::IDL->parse_thrift_file($opts{ThriftIDL}, $ENV{DEBUG});
-    if ($opts{Audit} && (my @audit = MyAPI::Common::ThriftAMQP->audit_idl_document($self{idl}))) {
-        print "The IDL '$opts{ThriftIDL}' failed the MyAPI audit:\n";
+    if ($opts{Audit} && (my @audit = Tapir::Common::ThriftAMQP->audit_idl_document($self{idl}))) {
+        print "The IDL '$opts{ThriftIDL}' failed the Tapir audit:\n";
         print " * $_\n" foreach @audit;
         exit 1;
     }
@@ -271,7 +271,7 @@ sub poe_service_call {
         $self->service_call($message, $sequence, $call_opts);
     };
     if (my $ex = $@) { 
-        $sequence->add_action(sub { die "Failed to call MyAPI::Client::ThriftAMQP->service_call(): $ex\n" })->run;
+        $sequence->add_action(sub { die "Failed to call Tapir::Client::ThriftAMQP->service_call(): $ex\n" })->run;
     }
 }
 

@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Time::HiRes qw(gettimeofday);
 
-use MyAPI::Server::ThriftAMQP;
+use Tapir::Server::ThriftAMQP;
 
 {
 	package My::Calculator;
@@ -25,7 +25,7 @@ use MyAPI::Server::ThriftAMQP;
 	}
 }
 
-my $server = MyAPI::Server::ThriftAMQP->create(
+my $server = Tapir::Server::ThriftAMQP->create(
 	ThriftIDL => $FindBin::Bin . '/thrift/calculator.thrift',
 	Service   => 'Calculator',
 	Handlers  => [{
@@ -44,7 +44,7 @@ my $server = MyAPI::Server::ThriftAMQP->create(
 	SSL           => 0,
 );
 
-isa_ok $server, 'MyAPI::Server::ThriftAMQP';
+isa_ok $server, 'Tapir::Server::ThriftAMQP';
 
 # Server::ThriftAMQP->handle_amq_message calls child_handle_message; test this
 
@@ -61,7 +61,7 @@ my $time_off_wire  = scalar gettimeofday;
 
 my $method_call = $server->child_handle_message($message, $meta, $authentication, $time_off_wire);
 
-isa_ok $method_call, 'MyAPI::MethodCall';
+isa_ok $method_call, 'Tapir::MethodCall';
 isa_ok $method_call, 'POE::Component::Sequence';
 
 # Test MethodCall methods

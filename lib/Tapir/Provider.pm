@@ -1,14 +1,14 @@
-package MyAPI::Provider;
+package Tapir::Provider;
 
 =head1 NAME
 
-MyAPI::Provider - Base class for API service providers
+Tapir::Provider - Base class for API service providers
 
 =head1 SYNOPSIS
 
   package MyServiceProvider;
 
-  use base qw(MyAPI::Provider);
+  use base qw(Tapir::Provider);
 
   sub method_ping {
       my ($self, $request) = @_;
@@ -31,11 +31,11 @@ MyAPI::Provider - Base class for API service providers
 
 =head1 DESCRIPTION
 
-This is an easy to use base class for creating a L<MyAPI::Server::ThriftAMQP> API server.  
+This is an easy to use base class for creating a L<Tapir::Server::ThriftAMQP> API server.  
 
 =head1 USAGE
 
-The server creation sets up a L<MyAPI::Server::ThriftAMQP::Handler::Object> handler with the following options:
+The server creation sets up a L<Tapir::Server::ThriftAMQP::Handler::Object> handler with the following options:
 
   object => $self,
   method_prefix => 'method_',
@@ -70,7 +70,7 @@ use Sys::Hostname qw(hostname);
 use JSON::XS;
 use Net::Address::IP::Local;
 
-use MyAPI::Server::ThriftAMQP;
+use Tapir::Server::ThriftAMQP;
 
 use Data::Dumper;
 use Scalar::Util qw(blessed);
@@ -142,7 +142,7 @@ sub new {
         close $out;
     }
 
-    $self->{server} = MyAPI->create_amqp_thrift_server(
+    $self->{server} = Tapir->create_amqp_thrift_server(
         Debug     => ($ENV{DEBUG} ? 1 : 0),
         Logger    => $self->{logger},
 
@@ -263,7 +263,7 @@ sub report_method_status {
 
     # Clone the request headers for this status response so the user can embed contextual data
     my %response_headers = %$headers;
-    delete $response_headers{$_} foreach @MyAPI::Server::reserved_headers;
+    delete $response_headers{$_} foreach @Tapir::Server::reserved_headers;
 
     $response_headers{'API-Method-Name'} = $request->method->name;
     $response_headers{'API-Service-Name'} = $request->service->name;

@@ -1,4 +1,4 @@
-package MyAPI::Common::ThriftAMQP;
+package Tapir::Common::ThriftAMQP;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base qw(Class::Accessor::Grouped);
 use Thrift::MemoryBuffer;
 use Thrift::JSONProtocol;
 use Thrift::BinaryProtocol;
-use MyAPI::Exceptions;
+use Tapir::Exceptions;
 use Data::Dumper;
 use JSON::XS;
 
@@ -300,7 +300,7 @@ sub validate_parser_message {
         my %doc_roles = map { $_ => 1 } @{ $method_doc->{role} };
         my @overlap = grep { $doc_roles{$_} } @{ $opt->{roles} };
         if (! @overlap) {
-            MyAPI::Unauthorized->throw(
+            Tapir::Unauthorized->throw(
                 "Role(s) not permitted to call method; have: "
                 .join(', ', map { '"' . $_ . '"' } @{ $opt->{roles} })
                 .', need: '
@@ -369,7 +369,7 @@ sub _validate_parser_message_argument {
     }
 
     if (! defined $field && ! $doc->{optional} && ! $spec->optional) {
-        MyAPI::InvalidArgument->throw(
+        Tapir::InvalidArgument->throw(
             error => "Missing non-optional field ".$spec->name,
             key => $spec->name,
         );
@@ -383,7 +383,7 @@ sub _validate_parser_message_argument {
         my %doc_roles = map { $_ => 1 } @{ $doc->{role} };
         my @overlap = grep { $doc_roles{$_} } @{ $opt->{roles} };
         if (! @overlap) {
-            MyAPI::InvalidArgument->throw(
+            Tapir::InvalidArgument->throw(
                 error => "Role(s) not permitted to use parameter '".$spec->name."'.  Have: "
                     .join(', ', map { '"' . $_ . '"' } @{ $opt->{roles} })
                     .', need: '
@@ -405,7 +405,7 @@ sub _validate_parser_message_argument {
         && $field->isa('Thrift::Parser::Type::string')
         && ! $doc->{utf8}
         && $field->value =~ m{[^\x00-\x7f]}) {
-        MyAPI::InvalidArgument->throw(
+        Tapir::InvalidArgument->throw(
             error => "String $desc contains > 127 bytes but isn't permitted to have utf8 data",
             key => $field->name, value => $field->value
         );
@@ -429,13 +429,13 @@ sub _validate_parser_message_argument {
                     }
                 }
                 if (! $regex) {
-                    MyAPI::InvalidSpec->throw(
+                    Tapir::InvalidSpec->throw(
                         error => "Can't parse regex pattern from '$value'",
                         key => ref($field),
                     );
                 }
                 if (defined $field->value && $field->value !~ $regex) {
-                    MyAPI::InvalidArgument->throw(
+                    Tapir::InvalidArgument->throw(
                         error => "Argument $desc doesn't pass regex $value",
                         key => $field->name, value => $field->value,
                     );
@@ -448,20 +448,20 @@ sub _validate_parser_message_argument {
                 $min = undef unless length $min;
                 $max = undef unless length $max;
                 if (! defined $min && ! defined $max) {
-                    MyAPI::InvalidSpec->throw(
+                    Tapir::InvalidSpec->throw(
                         error => "Can't parse length range from '$value' (format '\\d* - \\d*'",
                         key => ref($field),
                     );
                 }
                 my $len = length $field->value;
                 if (defined $min && $len < $min) {
-                    MyAPI::InvalidArgument->throw(
+                    Tapir::InvalidArgument->throw(
                         error => "Argument $desc is shorter than permitted ($min)",
                         key => $field->name, value => $field->value,
                     );
                 }
                 if (defined $max && $len > $max) {
-                    MyAPI::InvalidArgument->throw(
+                    Tapir::InvalidArgument->throw(
                         error => "Argument $desc is longer than permitted ($max)",
                         key => $field->name, value => $field->value,
                     );
@@ -474,19 +474,19 @@ sub _validate_parser_message_argument {
                 $min = undef unless length $min;
                 $max = undef unless length $max;
                 if (! defined $min && ! defined $max) {
-                    MyAPI::InvalidSpec->throw(
+                    Tapir::InvalidSpec->throw(
                         error => "Can't parse number range from '$value' (format '\\d* - \\d*'",
                         key => ref($field),
                     );
                 }
                 if (defined $min && $field->value < $min) {
-                    MyAPI::InvalidArgument->throw(
+                    Tapir::InvalidArgument->throw(
                         error => "Argument $desc is smaller than permitted ($min)",
                         key => $field->name, value => $field->value,
                     );
                 }
                 if (defined $max && $field->value > $max) {
-                    MyAPI::InvalidArgument->throw(
+                    Tapir::InvalidArgument->throw(
                         error => "Argument $desc is longer than permitted ($max)",
                         key => $field->name, value => $field->value,
                     );
@@ -494,7 +494,7 @@ sub _validate_parser_message_argument {
             }
         }
         else {
-            MyAPI::InvalidSpec->throw(
+            Tapir::InvalidSpec->throw(
                 error => "Validate key '$key' and field type '".ref($field)."' is not valid",
                 key => ref($field),
             );

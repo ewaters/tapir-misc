@@ -6,9 +6,9 @@ use FindBin;
 use lib (
     $FindBin::Bin . '/../lib',
 );
-use MyAPI::JSONProxy;
+use Tapir::JSONProxy;
 
-MyAPI::JSONProxy->run({
+Tapir::JSONProxy->run({
     http_server_port => 8080,
     ThriftIDL        => $FindBin::Bin . '/../t/thrift/calculator.thrift',
 });

@@ -1,14 +1,14 @@
-package MyAPI::JSONProxy;
+package Tapir::JSONProxy;
 
 =head1 NAME
 
-MyAPI::JSONProxy - RESTful JSON proxy for the Thrift AMQP API
+Tapir::JSONProxy - RESTful JSON proxy for the Thrift AMQP API
 
 =head1 DESCRIPTION
 
 Run a L<POE::Component::Server::HTTP> that receives requests such as 'POST /Container/reboot HTTP/1.0' and, given headers that authorize the request, encode a Thrift payload and enqueue the request on the AMQP servers, returning a response to the request when an AMQP response is returned.
 
-MyAPI::JSONProxy is useful for customers to use directly, providing them with an easy to use interface to our API that doesn't entail complicated AMQP coding.  They also don't require any Thrift code, as the payload is encoded as JSON.
+Tapir::JSONProxy is useful for customers to use directly, providing them with an easy to use interface to our API that doesn't entail complicated AMQP coding.  They also don't require any Thrift code, as the payload is encoded as JSON.
 
 This is also useful internally to provide us with a synchronous interface to our API for tasks that need to block on a particular method call.
 
@@ -21,8 +21,8 @@ use warnings;
 
 # This is a custom modified version of POE::Component::Server::HTTP that supports SSL
 use POE qw(Component::Server::HTTPs);
-use MyAPI::Client::ThriftAMQP;
-use MyAPI::Server;
+use Tapir::Client::ThriftAMQP;
+use Tapir::Server;
 use HTTP::Status qw(:constants);
 use JSON::XS;
 use Data::UUID;
@@ -44,7 +44,7 @@ my %opt = (
     amq_remote_address => undef,
     amq_ssl            => undef,
 
-    # To allow MyAPI::JSONProxy to inject the 'JSONProxy-Remote-IP' header, at the API::Provider end
+    # To allow Tapir::JSONProxy to inject the 'JSONProxy-Remote-IP' header, at the API::Provider end
     # we need a way to trust that this is genuine.  This is that assurance.
     SharedSecret => 'zeshcabyie',
 
@@ -161,7 +161,7 @@ sub start {
         },
     );
 
-    $heap->{myapi_client} = MyAPI::Client::ThriftAMQP->new(
+    $heap->{myapi_client} = Tapir::Client::ThriftAMQP->new(
         Logger      => $heap->{logger},
         Keepalive   => 60 * 5,
         Debug       => ($ENV{DEBUG} ? 1 : 0),
@@ -250,7 +250,7 @@ sub http_server_default_handler {
 
 =head2 start_request
 
-Compose a Thrift payload, setup an action chain, and call MyAPI::Client::ThriftAMQP->service_call() to handle the request.
+Compose a Thrift payload, setup an action chain, and call Tapir::Client::ThriftAMQP->service_call() to handle the request.
 
 =cut
 
@@ -273,7 +273,7 @@ sub start_request {
     $service =~ s{\..+}{};
 
 	# FIXME How do we find the method class?
-    my $method_class = join '::', 'MyAPI', $service, $method;
+    my $method_class = join '::', 'Tapir', $service, $method;
     $details->{method_class} = $method_class;
 
     if ($ENV{DEBUG}) {
@@ -309,7 +309,7 @@ sub start_request {
             $client->logger->error("An error occurred on ".$message->method.", error:".Dumper($error));
 
             if (ref $error && blessed $error) {
-                if ($error->isa('MyAPI::InvalidArguments')) {
+                if ($error->isa('Tapir::InvalidArguments')) {
                     $details->{error} = "The argument '".$error->named('argument')."' had an error: ".$error->named('message');
                 }
                 elsif ($error->isa('TApplicationException')) {

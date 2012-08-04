@@ -1,14 +1,14 @@
-package MyAPI::Server::ThriftAMQP;
+package Tapir::Server::ThriftAMQP;
 
 =head1 NAME
 
-MyAPI::Server::ThriftAMQP - An API server of Thrift over AMQP
+Tapir::Server::ThriftAMQP - An API server of Thrift over AMQP
 
 =head1 SYNOPSIS
 
-  use MyAPI::Server::ThriftAMQP;
+  use Tapir::Server::ThriftAMQP;
 
-  my $server = MyAPI::Server::ThriftAMQP->create(
+  my $server = Tapir::Server::ThriftAMQP->create(
       ThriftIDL => 'tutorial.thrift',
       Service   => 'Calculator',
       Handlers  => [{
@@ -20,7 +20,7 @@ MyAPI::Server::ThriftAMQP - An API server of Thrift over AMQP
 
 =head1 DESCRIPTION
 
-A subclass of L<MyAPI::Server> and L<MyAPI::Common::ThriftAMQP>.  Implements a L<Thrift::IDL> aware AMQP RPC service.
+A subclass of L<Tapir::Server> and L<Tapir::Common::ThriftAMQP>.  Implements a L<Thrift::IDL> aware AMQP RPC service.
 
 The process for handling requests is as follows:
 
@@ -46,7 +46,7 @@ The process for handling requests is as follows:
 
 =item Parse the payload using L<Thrift::Parser/parse_message>.  Send error response if failure.
 
-=item Perform L<MyAPI::Server/is_valid_request> authentication check.
+=item Perform L<Tapir::Server/is_valid_request> authentication check.
 
 =item If forking, check for current queue capacity.  We don't want to hold onto more requests then we can handle immediately.  If we will be at max capacity after this message, push the Ack call onto a queue to be sent afer the next message is handled by the process manager.  Otherwise, send the ack call now so we can receive more messages.  Then, hand off the call to the process manager, which will use it's IPC to send the request to an idle child process.
 
@@ -56,7 +56,7 @@ The process for handling requests is as follows:
 
 =back
 
-Handling requests is done by creating a L<MyAPI::MethodCall> object and handing it off to each L<MyAPI::Server::ThriftAMQP::Handler> object in my handler chain for actions to be added to the sequence.
+Handling requests is done by creating a L<Tapir::MethodCall> object and handing it off to each L<Tapir::Server::ThriftAMQP::Handler> object in my handler chain for actions to be added to the sequence.
 
 When a MethodCall is finished, a response will be published to the queue indicated in the request's 'reply to' header frame field, of some type of Thrift message.
 
@@ -71,8 +71,8 @@ use Params::Validate qw(validate ARRAYREF);
 use Time::HiRes qw(gettimeofday tv_interval);
 use Net::IP; # exports $IP_NO_OVERLAP
 use base qw(
-    MyAPI::Server
-    MyAPI::Common::ThriftAMQP
+    Tapir::Server
+    Tapir::Common::ThriftAMQP
 );
 __PACKAGE__->mk_group_accessors(simple => qw(
     amq
@@ -85,8 +85,8 @@ __PACKAGE__->mk_group_accessors(simple => qw(
     process_manager
 ));
 
-use MyAPI::MethodCall;
-use MyAPI::Server::ThriftAMQP::Handler;
+use Tapir::MethodCall;
+use Tapir::Server::ThriftAMQP::Handler;
 use POE qw(
     Component::IndependentProcesses
 );
@@ -116,7 +116,7 @@ Call with the following named values:
 
 =item I<Handlers>
 
-Array of hashes, where each hash is passed to L<MyAPI::Server::ThriftAMQP::Handler/factory> and added to the handler chain.
+Array of hashes, where each hash is passed to L<Tapir::Server::ThriftAMQP::Handler/factory> and added to the handler chain.
 
 =item I<Debug> (used for L<Thrift::Parser> debug)
 
@@ -199,7 +199,7 @@ sub create {
     my $self = bless \%self, $class;
 
     foreach my $handler_details (@{ $opts{Handlers} }) {
-        my $handler = MyAPI::Server::ThriftAMQP::Handler
+        my $handler = Tapir::Server::ThriftAMQP::Handler
             ->factory(%$handler_details);
         if (! $handler) {
             croak "Didn't find handler that matched signature: "
@@ -209,8 +209,8 @@ sub create {
     }
 
     $self{idl}     = Thrift::IDL->parse_thrift_file($opts{ThriftIDL}, $ENV{DEBUG});
-    if (my @audit = MyAPI::Common::ThriftAMQP->audit_idl_document($self{idl})) {
-        print "The IDL '$opts{ThriftIDL}' failed the MyAPI audit:\n";
+    if (my @audit = Tapir::Common::ThriftAMQP->audit_idl_document($self{idl})) {
+        print "The IDL '$opts{ThriftIDL}' failed the Tapir audit:\n";
         print " * $_\n" foreach @audit;
         exit 1;
     }
@@ -523,7 +523,7 @@ sub child_handle_message {
 
     # Perform the method call, deferred
 
-    my $call = MyAPI::MethodCall->new(
+    my $call = Tapir::MethodCall->new(
         service   => $self->service,
         method    => $message->method->idl,
         arguments => $message->arguments,
@@ -569,7 +569,7 @@ sub local_handle_message {
     my ($self, $message) = @_;
     my $meta = undef;
 
-    my $call = MyAPI::MethodCall->new(
+    my $call = Tapir::MethodCall->new(
         service   => $self->service,
         method    => $message->method->idl,
         arguments => $message->arguments,
@@ -700,7 +700,7 @@ sub send_amq_response {
     # are reserved for this app.  This allows the requestor to insert context
     # for the call that they can see when they get the result.
     my %response_headers = $meta->{header_frame}->headers ? %{ $meta->{header_frame}->headers } : ();
-    delete $response_headers{$_} foreach @MyAPI::Server::reserved_headers;
+    delete $response_headers{$_} foreach @Tapir::Server::reserved_headers;
 
     my %header_frame = (
         content_type => 'application/x-thrift',
@@ -833,13 +833,13 @@ sub authorization {
 
     # Perform method and parameter validation
     eval {
-        MyAPI::Common::ThriftAMQP
+        Tapir::Common::ThriftAMQP
             ->validate_parser_message($call->message, {
 					#roles    => [ keys %$roles ],
 					#key_type => $call->authentication->{key_type},
             });
     };
-    if (my $e = MyAPI::InvalidArgument->caught()) {
+    if (my $e = Tapir::InvalidArgument->caught()) {
 		# FIXME: Return a common invalid argument result
 		#return $call->set_exception(
 		#    MyClass::InvalidArguments->compose({

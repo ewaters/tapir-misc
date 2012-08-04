@@ -1,8 +1,8 @@
-package MyAPI::Server::ThriftAMQP::Handler::Package;
+package Tapir::Server::ThriftAMQP::Handler::Package;
 
 use strict;
 use warnings;
-use base qw(MyAPI::Server::ThriftAMQP::Handler);
+use base qw(Tapir::Server::ThriftAMQP::Handler);
 use Params::Validate qw(:all);
 
 sub new {

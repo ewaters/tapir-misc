@@ -3,9 +3,9 @@
 use strict;
 use warnings;
 use FindBin;
-use MyAPI::Client::ThriftAMQP;
+use Tapir::Client::ThriftAMQP;
 
-my $client = MyAPI::Client::ThriftAMQP->new(
+my $client = Tapir::Client::ThriftAMQP->new(
 	ThriftIDL => $FindBin::Bin . '/../t/thrift/calculator.thrift',
 
 	Debug => 1,
