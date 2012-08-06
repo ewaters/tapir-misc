@@ -21,12 +21,16 @@ package main;
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 use Tapir::Server;
 
 my $server = Tapir::Server->new(
-	idl_file => 'ex/sample.thrift',
+	thrift_file => 'ex/sample.thrift',
 );
+
+# Don't fail a 'require MyAPI::Accounts'
+$INC{'MyAPI/Accounts.pm'} = undef;
 
 $server->add_handler(
 	class => 'MyAPI::Accounts',

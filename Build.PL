@@ -19,6 +19,8 @@ my $build = Module::Build->new(
 
 		'Net::IP' => 0,
 		'YAML::XS' => 0,
+		'Devel::Declare' => 0,
+		'Moose' => 0,
 
 		# JSON Proxy
 		'IO::Socket::SSL' => 0,
