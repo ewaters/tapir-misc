@@ -76,6 +76,8 @@ sub parse_attrs {
 	$attrs =~ s/^\s+//;
 	$attrs =~ s/\s+$//;
 
+	# TODO
+
 	return;
 }
 
