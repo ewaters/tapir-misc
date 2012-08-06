@@ -47,19 +47,36 @@ sub parser {
 	$ctx->skip_declarator;
 	my $name  = $ctx->strip_name;
 	my $proto = $ctx->strip_proto;
+	my $attrs = parse_attrs($ctx->strip_attrs);
 
 	# Figure out what to inject based on the prototype
 	my $inject = parse_proto($proto);
 
-	# Ensure that ';' occurs at the end of the block
-	$inject = $ctx->scope_injector_call(';') . $inject;
-
 	# Add the method name onto the Handler->methods() accessor
 	my $pkg = $ctx->{into};
-	$pkg->add_method($name);
+
+	# Record some meta information about this in the class accessors
+	my $after_block = '';
+	$after_block = "$pkg->add_method(\\'$name\\');";
+
+	# Ensure that ';' occurs at the end of the block
+	$inject = $ctx->scope_injector_call("; $after_block") . $inject;
 
 	# Do the inject
 	$ctx->inject_if_block($inject);
+}
+
+sub parse_attrs {
+	my $attrs = shift;
+	$attrs ||= '';
+
+	return {} if $attrs eq '';
+
+	$attrs =~ s/^://;
+	$attrs =~ s/^\s+//;
+	$attrs =~ s/\s+$//;
+
+	return;
 }
 
 sub parse_proto {

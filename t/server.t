@@ -108,6 +108,8 @@ my $handler = Tapir::Server::ThriftAMQP::Handler::Inline->new(
 			is $call->arguments->field_named('username') . '', 'ewaters', "3: Username seen in arguments";
 			isa_ok $call->arguments->field_named('username'), 'Tappy::username', "4: field_named() returns a blessed object";
 
+			# Tappy::insufficientResources->throw("We are at capacity");
+
 			## The async method call doesn't finish until we call set_result()
 
 			$call->set_result({

@@ -2,12 +2,21 @@
 
 package MyAPI::Accounts;
 
-use strict;
-use warnings;
+use Moose;
 use Tapir::Server::Handler::Signatures;
-use base 'Tapir::Server::Handler::Class';
+extends 'Tapir::Server::Handler::Class';
 
 set_service 'Accounts';
+
+method validate : before {
+	foreach my $field (@{ $call->arguments->fields }) {
+		if ($field->value->isa('Tappy::username')) {
+			if (length($field->value) > 8) {
+				Tappy::invalidArguments->throw("Username too long");
+			}
+		}
+	}
+}
 
 method createAccount ($username, $password) {
 	print "createAccount called with $username and $password\n";
