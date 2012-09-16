@@ -57,7 +57,8 @@ sub parser {
 
 	# Record some meta information about this in the class accessors
 	my $after_block = '';
-	$after_block = "$pkg->add_method(\\'$name\\');";
+	my $modifier = $attrs ? ", \\'$attrs\\'" : '';
+	$after_block = "$pkg->add_method(\\'$name\\'$modifier);";
 
 	# Ensure that ';' occurs at the end of the block
 	$inject = $ctx->scope_injector_call("; $after_block") . $inject;
@@ -70,15 +71,13 @@ sub parse_attrs {
 	my $attrs = shift;
 	$attrs ||= '';
 
-	return {} if $attrs eq '';
+	return '' if $attrs eq '';
 
 	$attrs =~ s/^://;
 	$attrs =~ s/^\s+//;
 	$attrs =~ s/\s+$//;
 
-	# TODO
-
-	return;
+	return $attrs;
 }
 
 sub parse_proto {

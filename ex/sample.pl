@@ -49,10 +49,6 @@ $server->add_transport(
 	class   => 'Tapir::Server::Transport::HTTP',
 	options => {
 		port => 8080,
-		ssl  => {
-			key_file  => 'ex/ssl.key',
-			cert_file => 'ex/ssl.cert',
-		},
 	},
 );
 

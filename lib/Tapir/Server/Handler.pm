@@ -7,12 +7,13 @@ use base 'Class::Accessor::Grouped';
 __PACKAGE__->mk_group_accessors(inherited => qw(service methods));
 
 sub add_method {
-	my ($class, $method) = @_;
+	my ($class, $method, $modifier) = @_;
+	$modifier ||= 'normal';
 	if (my $methods = $class->methods) {
-		push @$methods, $method;
+		$methods->{$method} = $modifier;
 	}
 	else {
-		$class->methods([ $method ]);
+		$class->methods({ $method => $modifier });
 	}
 }
 
