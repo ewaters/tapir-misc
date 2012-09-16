@@ -1,7 +1,10 @@
 namespace perl Tappy
 
 typedef i32 account_id
+
+// @validate length 1-8
 typedef string username
+
 typedef string password
 
 struct account {
