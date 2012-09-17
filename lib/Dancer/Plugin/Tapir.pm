@@ -5,6 +5,7 @@ use Dancer::Plugin;
 use Carp;
 use Data::Dumper;
 use Try::Tiny;
+use IO::Capture::Stdout;
 
 use Thrift::IDL;
 use Thrift::Parser;
@@ -31,17 +32,21 @@ register setup_thrift_handler => sub {
 
 	my $idl = Thrift::IDL->parse_thrift_file($conf->{thrift_idl});
 
+	# Conduct an audit of the thrift document to ensure that all the methods are
+	# documented, have a @rest declaration, and all custom types are defined before
+	# being used.  Further, this will fill in the $object->{doc} hash for each
+	# Thrfit::IDL object, which is necessary for validate_parser_message as well as
+	# extracting the @rest values later.
+
 	my $validator = Tapir::Validator->new(
 		audit_types => 1,
 		docs => {
-			# Require all methods be documented
 			require => {
 				methods => 1,
 				rest    => 1,
 			},
 		},
 	);
-	
 	if (my @errors = $validator->audit_idl_document($idl)) {
 		croak "Invalid thrift_idl file '$conf->{thrift_idl}'; the following errors were found:\n"
 			. join("\n", map { " - $_" } @errors);
@@ -81,6 +86,8 @@ register setup_thrift_handler => sub {
 	my $parser = Thrift::Parser->new(idl => $idl, service => $service->name);
 
 	## Setup routes
+	
+	my $logger = Dancer::LoggerMockObject->new();
 
 	while (my ($method_name, $method_idl) = each %methods) {
 		my ($http_method, $dancer_route) = @{ $method_idl->{doc}{rest} }{'method', 'route'};
@@ -89,7 +96,8 @@ register setup_thrift_handler => sub {
 		my $method_message_class = $parser->{methods}{$method_name}{class};
 
 		my $dancer_sub = sub {
-			my $params = request->params;
+			my $request = request;
+			my $params = $request->params;
 
 			my $thrift_message;
 			try {
@@ -102,12 +110,54 @@ register setup_thrift_handler => sub {
 			$validator->validate_parser_message($thrift_message);
 
 			my $call = Tapir::MethodCall->new(
-				message => $thrift_message,
+				service   => $service,
+				message   => $thrift_message,
+				transport => $request,
+				logger    => $logger,
 			);
 
-			my %args = $call->args('plain');
-			return Dumper(\%args);
+			$handler_class->add_call_actions($call);
 
+			# We can't check is_finished since that's only set via a POE post; check instead to see
+			# if the action called set_result, set_exception or set_error
+			my $call_is_finished_sub = sub {
+				my @set = grep { $call->heap_isset($_) } qw(result exception error);
+				return $set[0];
+			};
+
+			my $capture_stdout = IO::Capture::Stdout->new();
+			$capture_stdout->start();
+
+			# Execute the actions
+			while (my $action = $call->get_next_action) {
+				$action->($call);
+				last if $call_is_finished_sub->();
+			}
+
+			$capture_stdout->stop();
+			foreach my $line ($capture_stdout->read()) {
+				$logger->info($handler_class.' in handling '.$call->method->name.' emitted: '.$line);
+			}
+
+			my $result_key = $call_is_finished_sub->();
+			if (! $result_key) {
+				die $handler_class.' in handling '.$call->method->name." never called set_result, set_exception or set_error\n";
+			}
+			my $result_value = $call->heap_index($result_key);
+
+			if ($result_key eq 'result') {
+				# Validate the result value against the Thrift specification
+				try {
+					$thrift_message->compose_reply($result_value);
+				}
+				catch {
+					die "Error in composing $method_message_class result: $_\n";
+				};
+				return $result_value;
+			}
+			else {
+				die $result_value;
+			}
 		};
 		
 		# Install the route
@@ -117,7 +167,28 @@ register setup_thrift_handler => sub {
 		}
 	}
 
+	# FIXME: This each call should auto-detect which serializer to use, contextually
+	set serializer => 'JSON';
 };
 
 register_plugin;
+
+{
+	package Dancer::LoggerMockObject;
+
+	use strict;
+	use warnings;
+
+	sub new {
+		my $class = shift;
+		return bless {}, $class;
+	}
+
+	sub core    { shift; Dancer::Logger::core(@_); }
+	sub debug   { shift; Dancer::Logger::debug(@_); }
+	sub warning { shift; Dancer::Logger::warning(@_); }
+	sub error   { shift; Dancer::Logger::error(@_); }
+	sub info    { shift; Dancer::Logger::info(@_); }
+}
+
 true;

@@ -65,6 +65,15 @@ sub parser {
 
 	# Do the inject
 	$ctx->inject_if_block($inject);
+
+	if (defined $name) {
+		$name = join('::', $ctx->get_curstash_name(), $name)
+			unless ($name =~ /::/);
+		$ctx->shadow(sub (&) { no strict 'refs'; *{$name} = shift; });
+	}
+	else {
+		$ctx->shadow(sub (&) { shift });
+	}
 }
 
 sub parse_attrs {
@@ -84,7 +93,7 @@ sub parse_proto {
 	my $proto = shift;
 	$proto ||= '';
 
-	my $inject = "my \$call = shift;";
+	my $inject = "my (\$class, \$call) = \@_;";
 
 	foreach my $part (split /\s* , \s*/x, $proto) {
 		# scalar '$var'

@@ -58,26 +58,25 @@ sub audit_idl_document {
             }
         }
 
+		my $audit_error = $self->_audit_parse_structured_comment($child);
+
         if ($child->isa('Thrift::IDL::TypeDef')
             || $child->isa('Thrift::IDL::Struct')
             || $child->isa('Thrift::IDL::Enum')
             || $child->isa('Thrift::IDL::Senum')
         ) {
-            $self->_audit_parse_structured_comment($child);
+			push @audit, $audit_error if $audit_error && $self->{docs}{require}{typedefs};
             $custom_types->{ $child->full_name } = $child;
         }
 
         if ($self->{docs}{require}{exceptions} && $child->isa('Thrift::IDL::Exception')) {
-            my $failed = $self->_audit_parse_structured_comment($child);
-            push @audit, $failed if $failed;
+            push @audit, $audit_error if $audit_error;
         }
         elsif ($self->{docs}{require}{structs} && $child->isa('Thrift::IDL::Struct') && ! $child->isa('Thrift::IDL::Exception')) {
-            my $failed = $self->_audit_parse_structured_comment($child);
-            push @audit, $failed if $failed;
+            push @audit, $audit_error if $audit_error;
         }
         elsif ($child->isa('Thrift::IDL::Service')) {
             my $service = $child;
-            $self->_audit_parse_structured_comment($service);
 
             # Ensure that each child method has a comment that defines it's documentation,
             # and parse this comment into a data structure and store in the $method object.
@@ -148,7 +147,9 @@ sub _audit_parse_structured_comment {
 
     my $comment = join "\n", map { $_->escaped_value } @comments;
 
-    my %doc = ( param => {} );
+    my %doc;
+    $object->{doc} = \%doc;
+
     foreach my $line (split /\n\s*/, $comment) {
         my @parts = split /\s* (\@\w+) \s*/x, $line;
         while (defined (my $part = shift @parts)) {
@@ -192,7 +193,6 @@ sub _audit_parse_structured_comment {
 		}
     }
 
-
     # Allow fields/arguments to have structured comments and to describe themselves
     {
         # Only use arguments or fields, not both (some objects allow both)
@@ -214,40 +214,39 @@ sub _audit_parse_structured_comment {
         }
     }
 
-    # Check for completeness of the documentation
+	# Check for completeness of the documentation
+    if ($object->isa('Thrift::IDL::Method')) {
+		if ($self->{docs}{require}{return}) {
+			# Non-void return value requires description
+			my $return = $object->returns;
+			unless ($return->isa('Thrift::IDL::Type::Base') && $return->name eq 'void') {
+				if (! $doc{return}) {
+					return "$object has a non-void return value but no docs for it";
+				}
+			}
+		}
 
-    if ($object->can('returns') && $self->{docs}{require}{return}) {
-        # Non-void return value requires description
-        my $return = $object->returns;
-        unless ($return->isa('Thrift::IDL::Type::Base') && $return->name eq 'void') {
-            if (! $doc{return}) {
-                return "$object has a non-void return value but no docs for it";
-            }
-        }
-    }
+		if ($self->{docs}{require}{params}) {
+			# Check the params (make a copy as I'll be destructive)
+			my %params = %{ $doc{param} };
+			my @fields = map { @{ $object->$_ } } grep { $object->can($_) } qw(arguments fields);
+			foreach my $field (@fields) {
+				if (defined $params{$field->name}) {
+					delete $params{$field->name};
+				}
+				else {
+					return "$object doesn't document argument $field";
+				}
+			}
+			foreach my $remaining (keys %params) {
+				return "$object documented param $remaining which doesn't exist in the object fields";
+			}
+		}
 
-    if ($self->{docs}{require}{params}) {
-        # Check the params (make a copy as I'll be destructive)
-        my %params = %{ $doc{param} };
-        my @fields = map { @{ $object->$_ } } grep { $object->can($_) } qw(arguments fields);
-        foreach my $field (@fields) {
-            if (defined $params{$field->name}) {
-                delete $params{$field->name};
-            }
-            else {
-                return "$object doesn't document argument $field";
-            }
-        }
-        foreach my $remaining (keys %params) {
-            return "$object documented param $remaining which doesn't exist in the object fields";
-        }
-    }
-
-	if ($self->{docs}{require}{rest} && ! $doc{rest}) {
-		return "$object doesn't provide a \@rest route";
+		if ($self->{docs}{require}{rest} && ! $doc{rest}) {
+			return "$object doesn't provide a \@rest route";
+		}
 	}
-
-    $object->{doc} = \%doc;
 
     return;
 }
@@ -286,8 +285,6 @@ sub _validate_parser_message_argument {
         }
         push @docs, $ref_object->{doc} if defined $ref_object->{doc};
     }
-
-	use Data::Dumper;  print STDERR Dumper(\@docs, $field);
 
     # Create an aggregate doc from the list of @docs
     my $doc = {};

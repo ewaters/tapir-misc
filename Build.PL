@@ -15,12 +15,13 @@ my $build = Module::Build->new(
 	requires => {
 		'POE::Component::Client::AMQP' => 0,
 		'Thrift::Parser' => 0,
-		'POE::Component::Sequence' => 0,
+		'POE::Component::Sequence' => '0.02',
 
 		'Net::IP' => 0,
 		'YAML::XS' => 0,
 		'Devel::Declare' => 0,
 		'Moose' => 0,
+		'IO::Capture' => 0,
 
 		# JSON Proxy
 		'IO::Socket::SSL' => 0,
