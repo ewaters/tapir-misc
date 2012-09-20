@@ -13,15 +13,22 @@ my $build = Module::Build->new(
 		'Test::Deep' => 0,
 	},
 	requires => {
-		'POE::Component::Client::AMQP' => 0,
 		'Thrift::Parser' => 0,
 		'POE::Component::Sequence' => '0.02',
+		'Moose' => 0,
 
+		# AMQP Server
+		'POE::Component::Client::AMQP' => 0,
 		'Net::IP' => 0,
 		'YAML::XS' => 0,
+
+		# Signatures
 		'Devel::Declare' => 0,
-		'Moose' => 0,
+
+		# Dancer plugin
 		'IO::Capture' => 0,
+		'Dancer' => 0,
+		'JSON' => 0,
 
 		# JSON Proxy
 		'IO::Socket::SSL' => 0,
