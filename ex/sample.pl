@@ -26,6 +26,28 @@ method createAccount ($username, $password) {
 	});
 }
 
+=cut
+
+method createAccount : version2 ($username, $password) {
+	print "createAccount called with $username and $password\n";
+	$call->add_action(\&lookup_username);
+	$call->add_action(sub {
+		my $call = shift;
+		my $Username = $call->heap_index('Username');
+		return {
+			id         => $Username->id,
+			allocation => 1000,
+		};
+	});
+}
+
+sub lookup_username {
+	my $call = shift;
+	$call->heap_set('Username' => Username->new());
+}
+
+=cut
+
 package main;
 
 use strict;

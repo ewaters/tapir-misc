@@ -130,6 +130,7 @@ register setup_thrift_handler => sub {
 				return $set[0];
 			};
 
+			# TODO: Replace with Capture::Tiny
 			my $capture_stdout = IO::Capture::Stdout->new();
 			$capture_stdout->start();
 
