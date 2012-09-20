@@ -25,11 +25,6 @@ my $build = Module::Build->new(
 		# Signatures
 		'Devel::Declare' => 0,
 
-		# Dancer plugin
-		'IO::Capture' => 0,
-		'Dancer' => 0,
-		'JSON' => 0,
-
 		# JSON Proxy
 		'IO::Socket::SSL' => 0,
 		'POE::Component::Server::HTTP' => 0,
