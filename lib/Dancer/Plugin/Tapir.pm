@@ -7,6 +7,10 @@ use Data::Dumper;
 use Try::Tiny;
 use IO::Capture::Stdout;
 
+# POE sessions will be created by Tapir::MethodCall; let's not see an error about POE never running
+use POE;
+POE::Kernel->run();
+
 use Thrift::IDL;
 use Thrift::Parser;
 use Tapir::Validator;
@@ -18,19 +22,20 @@ register setup_thrift_handler => sub {
 	my ($self, @args) = plugin_args(@_);
 	# $self is undef for Dancer 1
 	my $conf = plugin_setting();
+	my %conf = ( %$conf, @args );
 
 	## Validate the plugin settings
 
-	if (my @missing_args = grep { ! defined $conf->{$_} } qw(thrift_idl handler_class)) {
+	if (my @missing_args = grep { ! defined $conf{$_} } qw(thrift_idl handler_class)) {
 		croak "Missing configuration settings for Tapir plugin: " . join('; ', @missing_args);
 	}
-	if (! -f $conf->{thrift_idl}) {
-		croak "Invalid thrift_idl file '$conf->{thrift_idl}'";
+	if (! -f $conf{thrift_idl}) {
+		croak "Invalid thrift_idl file '$conf{thrift_idl}'";
 	}
 	
 	## Audit the IDL
 
-	my $idl = Thrift::IDL->parse_thrift_file($conf->{thrift_idl});
+	my $idl = Thrift::IDL->parse_thrift_file($conf{thrift_idl});
 
 	# Conduct an audit of the thrift document to ensure that all the methods are
 	# documented, have a @rest declaration, and all custom types are defined before
@@ -48,7 +53,7 @@ register setup_thrift_handler => sub {
 		},
 	);
 	if (my @errors = $validator->audit_idl_document($idl)) {
-		croak "Invalid thrift_idl file '$conf->{thrift_idl}'; the following errors were found:\n"
+		croak "Invalid thrift_idl file '$conf{thrift_idl}'; the following errors were found:\n"
 			. join("\n", map { " - $_" } @errors);
 	}
 
@@ -56,7 +61,7 @@ register setup_thrift_handler => sub {
 
 	## Use the handler class and test for completeness
 
-	my $handler_class = $conf->{handler_class};
+	my $handler_class = $conf{handler_class};
 	eval "require $handler_class";
 	if ($@) {
 		croak "Failed to load $handler_class: $@";
@@ -70,7 +75,7 @@ register setup_thrift_handler => sub {
 	}
 	my $service = $services{ $handler_class->service };
 	if (! $service) {
-		croak "$handler_class is for the service ".$handler_class->service.", which is not registered with $conf->{thrift_idl}";
+		croak "$handler_class is for the service ".$handler_class->service.", which is not registered with $conf{thrift_idl}";
 	}
 
 	my %methods = map { $_->name => $_ } @{ $service->methods };
