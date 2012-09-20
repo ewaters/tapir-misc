@@ -42,18 +42,18 @@ sub new {
 sub audit_idl_document {
     my ($self, $document) = @_;
 
-    my $custom_types = {};
+    $self->{custom_types} = {};
 
     my (%methods_types_used);
 
     my @audit;
     foreach my $child (@{ $document->children }) {
-        foreach my $type (_audit_flatten_types($child)) {
+        foreach my $type ($self->_audit_flatten_types($child)) {
             next unless $type->isa('Thrift::IDL::Type::Custom');
             if ($child->isa('Thrift::IDL::Service')) {
                 $methods_types_used{ $type->full_name }++;
             }
-            if ($self->{audit_types} && ! $custom_types->{ $type->full_name }) {
+            if ($self->{audit_types} && ! $self->{custom_types}{ $type->full_name }) {
                 push @audit, "$child contains reference to custom type ".$type->full_name." which hasn't yet been defined";
             }
         }
@@ -66,7 +66,7 @@ sub audit_idl_document {
             || $child->isa('Thrift::IDL::Senum')
         ) {
 			push @audit, $audit_error if $audit_error && $self->{docs}{require}{typedefs};
-            $custom_types->{ $child->full_name } = $child;
+            $self->{custom_types}{ $child->full_name } = $child;
         }
 
         if ($self->{docs}{require}{exceptions} && $child->isa('Thrift::IDL::Exception')) {
@@ -113,7 +113,7 @@ sub audit_idl_document {
         }
     }
 
-    if ($self->{warn_unused_types} && (my @unused = sort grep { ! $methods_types_used{$_} } keys %$custom_types)) {
+    if ($self->{warn_unused_types} && (my @unused = sort grep { ! $methods_types_used{$_} } keys %{ $self->{custom_types} })) {
         print STDERR "AUDIT WARN: The following types were custom defined but weren't used in any method I saw:\n";
         print STDERR "  " . join(', ', @unused) . "\n";
     }
@@ -122,18 +122,18 @@ sub audit_idl_document {
 }
 
 sub _audit_flatten_types {
-    my ($node, $custom_types) = @_;
+    my ($self, $node) = @_;
     if (! defined $node) {
         print STDERR "_audit_flatten_types() called on undef\n";
         return ();
     }
     # Resolve named custom types to their original typedef objects
-    if ($node->isa('Thrift::IDL::Type::Custom') && $custom_types && $custom_types->{ $node->full_name }) {
-        $node = $custom_types->{ $node->full_name };
+    if ($node->isa('Thrift::IDL::Type::Custom') && $self->{custom_types} && $self->{custom_types}{ $node->full_name }) {
+        $node = $self->{custom_types}{ $node->full_name };
     }
     my @types = map { $node->$_ } grep { $node->can($_) } qw(type val_type key_type returns);
     my @children = map { ref $_ ? @$_ : $_ } map { $node->$_ } grep { $node->can($_) && defined $node->$_ } qw(arguments throws children fields);
-    return @types, map { _audit_flatten_types($_, $custom_types) } @types, @children;
+    return @types, map { $self->_audit_flatten_types($_) } @types, @children;
 }
 
 sub _audit_parse_structured_comment {
